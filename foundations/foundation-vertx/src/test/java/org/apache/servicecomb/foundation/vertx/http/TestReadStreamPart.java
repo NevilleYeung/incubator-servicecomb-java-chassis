@@ -20,12 +20,14 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import javax.ws.rs.core.HttpHeaders;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.servicecomb.foundation.test.scaffolding.exception.RuntimeExceptionWithoutStackTrace;
 import org.apache.servicecomb.foundation.vertx.stream.InputStreamToReadStream;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
@@ -40,7 +42,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystemException;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.impl.ContextImpl;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.SyncVertx;
 import io.vertx.core.streams.WriteStream;
 import mockit.Expectations;
@@ -51,7 +53,7 @@ import mockit.Mocked;
 public class TestReadStreamPart {
   static SyncVertx vertx = new SyncVertx();
 
-  static ContextImpl context = vertx.getContext();
+  static ContextInternal context = vertx.getContext();
 
   static String src = "src";
 
@@ -63,7 +65,6 @@ public class TestReadStreamPart {
 
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
-
 
   @Before
   public void setup() throws IOException {
@@ -127,7 +128,7 @@ public class TestReadStreamPart {
 
   @Test
   public void saveToWriteStream_writeException() throws InterruptedException, ExecutionException {
-    Error error = new Error();
+    RuntimeException error = new RuntimeExceptionWithoutStackTrace();
     WriteStream<Buffer> writeStream = new MockUp<WriteStream<Buffer>>() {
       Handler<Throwable> exceptionHandler;
 
@@ -153,7 +154,7 @@ public class TestReadStreamPart {
   @Test
   public void saveToWrite_readException(@Mocked WriteStream<Buffer> writeStream)
       throws InterruptedException, ExecutionException {
-    Error error = new Error();
+    RuntimeException error = new RuntimeExceptionWithoutStackTrace();
     new MockUp<InputStream>(inputStream) {
       @Mock
       int read(byte b[]) throws IOException {
@@ -186,7 +187,7 @@ public class TestReadStreamPart {
 
     part.saveToFile(file.getAbsolutePath()).get();
 
-    Assert.assertEquals(src, FileUtils.readFileToString(file));
+    Assert.assertEquals(src, FileUtils.readFileToString(file, StandardCharsets.UTF_8));
 
     FileUtils.forceDelete(dir);
     Assert.assertFalse(dir.exists());

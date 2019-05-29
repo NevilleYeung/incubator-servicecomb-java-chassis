@@ -17,11 +17,11 @@
 
 package org.apache.servicecomb.serviceregistry.consumer;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import org.apache.servicecomb.foundation.common.concurrent.ConcurrentHashMapEx;
 import org.apache.servicecomb.foundation.common.utils.SPIServiceUtils;
@@ -34,6 +34,7 @@ import org.apache.servicecomb.serviceregistry.config.ServiceRegistryConfig;
 import org.apache.servicecomb.serviceregistry.definition.DefinitionConst;
 import org.apache.servicecomb.serviceregistry.task.event.MicroserviceNotExistEvent;
 import org.apache.servicecomb.serviceregistry.task.event.PullMicroserviceVersionsInstancesEvent;
+import org.apache.servicecomb.serviceregistry.task.event.SafeModeChangeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,7 @@ import com.google.common.eventbus.Subscribe;
 public class MicroserviceVersions {
   private static final Logger LOGGER = LoggerFactory.getLogger(MicroserviceVersions.class);
 
-  AppManager appManager;
+  protected AppManager appManager;
 
   private String appId;
 
@@ -52,6 +53,9 @@ public class MicroserviceVersions {
   private String revision = null;
 
   private List<MicroserviceInstance> pulledInstances;
+
+  // in safe mode, instances will never be deleted
+  private boolean safeMode = false;
 
   // instances not always equals to pulledInstances
   // in the future:
@@ -89,6 +93,10 @@ public class MicroserviceVersions {
 
   public boolean isValidated() {
     return validated;
+  }
+
+  public AppManager getAppManager() {
+    return appManager;
   }
 
   public String getAppId() {
@@ -176,18 +184,12 @@ public class MicroserviceVersions {
       instances = mergeInstances(pulledInstances, instances);
       for (MicroserviceInstance instance : instances) {
         // ensure microserviceVersion exists
-        versions.computeIfAbsent(instance.getServiceId(), microserviceId -> {
-          MicroserviceVersion microserviceVersion =
-              appManager.getMicroserviceVersionFactory().create(microserviceName, microserviceId);
-          for (MicroserviceVersionRule microserviceVersionRule : versionRules.values()) {
-            microserviceVersionRule.addMicroserviceVersion(microserviceVersion);
-          }
-          return microserviceVersion;
-        });
+        versions.computeIfAbsent(instance.getServiceId(),
+            microserviceId -> appManager.getMicroserviceVersionFactory().create(microserviceName, microserviceId));
       }
 
       for (MicroserviceVersionRule microserviceVersionRule : versionRules.values()) {
-        microserviceVersionRule.setInstances(instances);
+        microserviceVersionRule.update(versions, instances);
       }
       revision = rev;
     }
@@ -195,20 +197,26 @@ public class MicroserviceVersions {
 
   private List<MicroserviceInstance> mergeInstances(List<MicroserviceInstance> pulledInstances,
       List<MicroserviceInstance> inUseInstances) {
-    List<MicroserviceInstance> upInstances = pulledInstances
-        .stream()
-        .collect(Collectors.toList());
+    List<MicroserviceInstance> upInstances = new ArrayList<>(pulledInstances);
+    if (safeMode) {
+      // in safe mode, instances will never be deleted
+      upInstances.forEach(instance -> {
+        if (!inUseInstances.contains(instance)) {
+          inUseInstances.add(instance);
+        }
+      });
+      return inUseInstances;
+    }
     if (upInstances.isEmpty() && inUseInstances != null && ServiceRegistryConfig.INSTANCE
         .isEmptyInstanceProtectionEnabled()) {
       MicroserviceInstancePing ping = SPIServiceUtils.getPriorityHighestService(MicroserviceInstancePing.class);
-      inUseInstances.stream()
-          .forEach(instance -> {
-            if (!upInstances.contains(instance)) {
-              if (ping.ping(instance)) {
-                upInstances.add(instance);
-              }
-            }
-          });
+      inUseInstances.forEach(instance -> {
+        if (!upInstances.contains(instance)) {
+          if (ping.ping(instance)) {
+            upInstances.add(instance);
+          }
+        }
+      });
     }
     return upInstances;
   }
@@ -233,10 +241,7 @@ public class MicroserviceVersions {
 
     MicroserviceVersionRule microserviceVersionRule =
         new MicroserviceVersionRule(appId, microserviceName, strVersionRule);
-    for (MicroserviceVersion microserviceVersion : versions.values()) {
-      microserviceVersionRule.addMicroserviceVersion(microserviceVersion);
-    }
-    microserviceVersionRule.setInstances(instances);
+    microserviceVersionRule.update(versions, instances);
     return microserviceVersionRule;
   }
 
@@ -259,10 +264,21 @@ public class MicroserviceVersions {
     postPullInstanceEvent(0);
   }
 
+  @Subscribe
+  public void onSafeModeChanged(SafeModeChangeEvent modeChangeEvent) {
+    this.safeMode = modeChangeEvent.getCurrentMode();
+  }
+
   protected boolean isEventAccept(MicroserviceInstanceChangedEvent changedEvent) {
     return (appId.equals(changedEvent.getKey().getAppId()) &&
         microserviceName.equals(changedEvent.getKey().getServiceName())) ||
         microserviceName.equals(
             changedEvent.getKey().getAppId() + Const.APP_SERVICE_SEPARATOR + changedEvent.getKey().getServiceName());
+  }
+
+  public void destroy() {
+    for (MicroserviceVersion microserviceVersion : versions.values()) {
+      microserviceVersion.destroy();
+    }
   }
 }

@@ -25,6 +25,7 @@ import org.apache.servicecomb.it.schema.TestApiOperation;
 import org.apache.servicecomb.it.testcase.TestAcceptType;
 import org.apache.servicecomb.it.testcase.TestAnnotatedAttribute;
 import org.apache.servicecomb.it.testcase.TestApiParam;
+import org.apache.servicecomb.it.testcase.TestAsyncInvoke;
 import org.apache.servicecomb.it.testcase.TestChangeTransport;
 import org.apache.servicecomb.it.testcase.TestDataTypePrimitive;
 import org.apache.servicecomb.it.testcase.TestDefaultJsonValueJaxrsSchema;
@@ -35,12 +36,13 @@ import org.apache.servicecomb.it.testcase.TestExceptionConvertEdge;
 import org.apache.servicecomb.it.testcase.TestGenericEdge;
 import org.apache.servicecomb.it.testcase.TestIgnoreMethod;
 import org.apache.servicecomb.it.testcase.TestIgnoreStaticMethod;
+import org.apache.servicecomb.it.testcase.TestOptional;
 import org.apache.servicecomb.it.testcase.TestParamCodec;
 import org.apache.servicecomb.it.testcase.TestParamCodecEdge;
 import org.apache.servicecomb.it.testcase.TestRequestBodySpringMvcSchema;
 import org.apache.servicecomb.it.testcase.TestRestController;
-import org.apache.servicecomb.it.testcase.TestRestServerConfig;
 import org.apache.servicecomb.it.testcase.TestRestServerConfigEdge;
+import org.apache.servicecomb.it.testcase.TestRestVertxTransportConfig;
 import org.apache.servicecomb.it.testcase.TestTrace;
 import org.apache.servicecomb.it.testcase.TestTraceEdge;
 import org.apache.servicecomb.it.testcase.TestUpload;
@@ -125,6 +127,10 @@ public class ConsumerMain {
     ITJUnitUtils.run(TestDefaultJsonValueJaxrsSchema.class);
     ITJUnitUtils.run(TestRestController.class);
     ITJUnitUtils.runWithRest(TestRestController.class);
+
+    ITJUnitUtils.runWithHighwayAndRest(TestAsyncInvoke.class);
+
+    ITJUnitUtils.runWithHighwayAndRest(TestOptional.class);
   }
 
   interface ITTask {
@@ -150,7 +156,7 @@ public class ConsumerMain {
     ITJUnitUtils.run(Test3rdPartyInvocation.class);
 
     // about url len, different deploy have different url len, so only test standalone
-    ITJUnitUtils.runWithRest(TestRestServerConfig.class);
+    ITJUnitUtils.runWithRest(TestRestVertxTransportConfig.class);
     ITJUnitUtils.run(TestRestServerConfigEdge.class);
 
     // currently, only support vertx download
@@ -161,7 +167,7 @@ public class ConsumerMain {
     runShareTestCases();
 
     //as setMaxInitialLineLength() is not work for http2, do not need
-    // ITJUnitUtils.runWithRest(TestRestServerConfig.class)
+    // ITJUnitUtils.runWithRest(TestRestVertxTransportConfig.class)
     ITJUnitUtils.run(TestRestServerConfigEdge.class);
   }
 
@@ -169,7 +175,7 @@ public class ConsumerMain {
     runShareTestCases();
 
     //as setMaxInitialLineLength() is not work for http2, do not need
-    // ITJUnitUtils.runWithRest(TestRestServerConfig.class)
+    // ITJUnitUtils.runWithRest(TestRestVertxTransportConfig.class)
     ITJUnitUtils.run(TestRestServerConfigEdge.class);
   }
 

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.servicecomb.foundation.test.scaffolding.config.ArchaiusUtils;
+import org.apache.servicecomb.foundation.test.scaffolding.exception.RuntimeExceptionWithoutStackTrace;
 import org.apache.servicecomb.serviceregistry.RegistryUtils;
 import org.apache.servicecomb.serviceregistry.ServiceRegistry;
 import org.apache.servicecomb.serviceregistry.api.Const;
@@ -35,7 +36,6 @@ import org.apache.servicecomb.serviceregistry.api.response.MicroserviceInstanceC
 import org.apache.servicecomb.serviceregistry.client.http.MicroserviceInstances;
 import org.apache.servicecomb.serviceregistry.task.event.MicroserviceNotExistEvent;
 import org.apache.servicecomb.serviceregistry.task.event.PullMicroserviceVersionsInstancesEvent;
-import org.apache.servicecomb.serviceregistry.version.Version;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -184,7 +184,7 @@ public class TestMicroserviceVersions {
       @Mock
       MicroserviceInstances findServiceInstances(String appId, String serviceName,
           String versionRule, String revision) {
-        throw new Error("must not pull");
+        throw new RuntimeExceptionWithoutStackTrace("must not pull");
       }
     };
 
@@ -260,21 +260,11 @@ public class TestMicroserviceVersions {
   }
 
   @Test
-  public void createAndInitMicroserviceVersionRule(@Mocked MicroserviceVersion microserviceVersion) {
+  public void createAndInitMicroserviceVersionRule() {
     String microserviceId = "1";
     createMicroservice(microserviceId);
 
-    Version version = new Version("1.0.0");
-
-    new Expectations() {
-      {
-        microserviceVersion.getVersion();
-        result = version;
-        microserviceVersion.getMicroservice();
-        result = microservices.get(microserviceId);
-      }
-    };
-
+    MicroserviceVersion microserviceVersion = new MicroserviceVersion(microservices.get(microserviceId));
     microserviceVersions.getVersions().put(microserviceId, microserviceVersion);
 
     MicroserviceVersionRule microserviceVersionRule =
@@ -334,7 +324,7 @@ public class TestMicroserviceVersions {
     new MockUp<MicroserviceVersions>(microserviceVersions) {
       @Mock
       void setInstances(List<MicroserviceInstance> pulledInstances, String rev) {
-        throw new Error("failed to set instances");
+        throw new RuntimeExceptionWithoutStackTrace("failed to set instances");
       }
     };
 

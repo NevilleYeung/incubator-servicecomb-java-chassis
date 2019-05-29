@@ -80,18 +80,18 @@ public class TestDefaultTcpServerMetrics {
   @Before
   public void setup() {
     vertxOptions.setMetricsOptions(metricsOptionsEx);
-    defaultVertxMetrics = new DefaultVertxMetrics(vertx, vertxOptions);
+    defaultVertxMetrics = new DefaultVertxMetrics(vertxOptions);
 
     metrics_listen1_server1 = (DefaultTcpServerMetrics) defaultVertxMetrics
-        .createMetrics(listen1_addr, options);
+        .createNetServerMetrics(options, listen1_addr);
     metrics_listen1_server2 = (DefaultTcpServerMetrics) defaultVertxMetrics
-        .createMetrics(listen1_addr, options);
+        .createNetServerMetrics(options, listen1_addr);
     endpointMetric1 = metrics_listen1_server1.getEndpointMetric();
 
     metrics_listen2_server1 = (DefaultTcpServerMetrics) defaultVertxMetrics
-        .createMetrics(listen2_addr, options);
+        .createNetServerMetrics(options, listen2_addr);
     metrics_listen2_server2 = (DefaultTcpServerMetrics) defaultVertxMetrics
-        .createMetrics(listen2_addr, options);
+        .createNetServerMetrics(options, listen2_addr);
     endpointMetric2 = metrics_listen2_server1.getEndpointMetric();
 
     socketMetric_listen1_1 = metrics_listen1_server1.connected(anyRemoteAddr, remoteName);
@@ -178,7 +178,6 @@ public class TestDefaultTcpServerMetrics {
   @SuppressWarnings("deprecation")
   @Test
   public void meaningless() {
-    Assert.assertSame(listen1_addr, metrics_listen1_server1.getEndpointMetric().getAddress());
     Assert.assertTrue(metrics_listen1_server1.isEnabled());
 
     metrics_listen1_server1.exceptionOccurred(null, null, null);

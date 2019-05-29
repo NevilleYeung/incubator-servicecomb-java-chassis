@@ -18,6 +18,7 @@
 package org.apache.servicecomb.transport.highway;
 
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 
 import javax.ws.rs.core.Response.Status;
 import javax.xml.ws.Holder;
@@ -65,17 +66,12 @@ public class HighwayServerInvoke {
 
   protected long start;
 
-  public HighwayServerInvoke() {
-    this(null);
-  }
-
   public HighwayServerInvoke(Endpoint endpoint) {
     this.start = System.nanoTime();
     this.endpoint = endpoint;
   }
 
-  public boolean init(TcpConnection connection, long msgId,
-      RequestHeader header, Buffer bodyBuffer) {
+  public boolean init(TcpConnection connection, long msgId, RequestHeader header, Buffer bodyBuffer) {
     try {
       doInit(connection, msgId, header, bodyBuffer);
       return true;
@@ -93,8 +89,7 @@ public class HighwayServerInvoke {
     }
   }
 
-  private void doInit(TcpConnection connection, long msgId, RequestHeader header,
-      Buffer bodyBuffer) throws Exception {
+  private void doInit(TcpConnection connection, long msgId, RequestHeader header, Buffer bodyBuffer) throws Exception {
     this.connection = connection;
     this.msgId = msgId;
     this.header = header;
@@ -125,7 +120,7 @@ public class HighwayServerInvoke {
 
   private boolean isInQueueTimeout() {
     return System.nanoTime() - invocation.getInvocationStageTrace().getStart() >
-        HighwayConfig.getRequestWaitInPoolTimeout() * 1_000_000;
+        operationMeta.getConfig().getNanoHighwayRequestWaitInPoolTimeout();
   }
 
   private void doRunInExecutor() throws Exception {
@@ -136,9 +131,7 @@ public class HighwayServerInvoke {
     invocation.getHandlerContext().put(Const.REMOTE_ADDRESS, this.connection.getNetSocket().remoteAddress());
 
     invocation.getInvocationStageTrace().startHandlersRequest();
-    invocation.next(response -> {
-      sendResponse(invocation.getContext(), response);
-    });
+    invocation.next(response -> sendResponse(invocation.getContext(), response));
   }
 
   private void sendResponse(Map<String, String> context, Response response) {
@@ -194,7 +187,10 @@ public class HighwayServerInvoke {
       }
 
       operationMeta.getExecutor().execute(this::runInExecutor);
-    } catch (IllegalStateException e) {
+    } catch (Throwable e) {
+      if (e instanceof RejectedExecutionException) {
+        LOGGER.error("failed to schedule invocation, message={}, executor={}.", e.getMessage(), e.getClass().getName());
+      }
       sendResponse(header.getContext(), Response.providerFailResp(e));
     }
   }

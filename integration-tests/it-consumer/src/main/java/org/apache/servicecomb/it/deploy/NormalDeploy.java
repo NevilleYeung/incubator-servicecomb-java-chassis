@@ -19,12 +19,13 @@ package org.apache.servicecomb.it.deploy;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.servicecomb.foundation.common.utils.JsonUtils;
 import org.apache.servicecomb.it.junit.ITJUnitUtils;
 import org.slf4j.Logger;
@@ -52,7 +53,7 @@ public class NormalDeploy {
     cmds = addArgs(cmds);
 
     this.prevFailCount = ITJUnitUtils.getFailures().size();
-
+    LOGGER.info("createProcessBuilder: " + StringUtils.join(cmds, " ") + "\nWorkDir: " + deployDefinition.getWorkDir());
     subProcess = createProcessBuilder(cmds).start();
     subProcessCommandWriter = new BufferedWriter(new OutputStreamWriter(subProcess.getOutputStream()));
     subProcessLogger = new SubProcessLogger(deployDefinition.getDisplayName(), subProcess.getInputStream(),
@@ -92,11 +93,23 @@ public class NormalDeploy {
   }
 
   protected void afterStop() {
-    IOUtils.closeQuietly(subProcessCommandWriter);
+    try {
+      if (subProcessCommandWriter != null) {
+        subProcessCommandWriter.close();
+      }
+    } catch (final IOException ioe) {
+      // ignore
+    }
     subProcessCommandWriter = null;
 
     SubProcessLogger old = subProcessLogger;
-    IOUtils.closeQuietly(subProcessLogger);
+    try {
+      if (subProcessLogger != null) {
+        subProcessLogger.close();
+      }
+    } catch (final IOException ioe) {
+      // ignore
+    }
     subProcessLogger = null;
 
     if (prevFailCount != ITJUnitUtils.getFailures().size()) {

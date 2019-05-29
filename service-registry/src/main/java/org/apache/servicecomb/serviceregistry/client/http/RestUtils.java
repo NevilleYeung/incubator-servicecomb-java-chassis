@@ -20,6 +20,7 @@ package org.apache.servicecomb.serviceregistry.client.http;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -83,6 +84,7 @@ final class RestUtils {
             .append(queryParams);
       }
 
+      @SuppressWarnings("deprecation")
       HttpClientRequest httpClientRequest = httpClient
           .request(httpMethod, ipPort.getPort(), ipPort.getHostOrIp(), url.toString(), response -> {
             responseHandler.handle(new RestResponse(requestContext, response));
@@ -96,6 +98,10 @@ final class RestUtils {
                 ipPort.getHostOrIp(),
                 ipPort.getPort(),
                 e.getMessage());
+            if (e instanceof UnknownHostException) {
+              // help analyses DNS problem
+              LOGGER.error("DNS resolve failed!", e);
+            }
             responseHandler.handle(new RestResponse(requestContext, null));
           });
 
