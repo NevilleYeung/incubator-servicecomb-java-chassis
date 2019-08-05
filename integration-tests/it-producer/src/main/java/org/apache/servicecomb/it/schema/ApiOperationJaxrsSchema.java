@@ -14,23 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.servicecomb.bizkeeper;
+package org.apache.servicecomb.it.schema;
 
-import org.apache.servicecomb.core.Invocation;
-import org.apache.servicecomb.swagger.invocation.Response;
-import org.springframework.stereotype.Component;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
-@Component
-public class ReturnNullFallbackPolicy implements FallbackPolicy {
-  private static final String POLICY_NAME = "returnNull";
+import org.apache.servicecomb.provider.rest.common.RestSchema;
 
-  @Override
-  public String name() {
-    return POLICY_NAME;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+
+@RestSchema(schemaId = "apiOperationJaxrsSchemaTest")
+@Path("/v1/apiOperationJaxrsHello")
+public class ApiOperationJaxrsSchema {
+
+  @Path("/sayHi")
+  @GET
+  @Produces("text/plain;charset=UTF-8")
+  @ApiOperation(value = "", nickname = "sayHi")
+  public String sayHello() {
+    return "ApiOperationJaxrsSchema#sayHello";
   }
 
-  @Override
-  public Response getFallbackResponse(Invocation invocation, Throwable error) {
-    return Response.succResp(null);
+  @Path("/sayHello")
+  @GET
+  @Produces("application/json;charset=UTF-8")
+  @ApiOperation(value = "", nickname = "sayHello")
+  public String sayHello(@ApiParam("name") String name) {
+    return name;
   }
 }

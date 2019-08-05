@@ -14,23 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.servicecomb.bizkeeper;
+package org.apache.servicecomb.it.schema;
 
-import org.apache.servicecomb.core.Invocation;
-import org.apache.servicecomb.swagger.invocation.Response;
-import org.springframework.stereotype.Component;
+import org.apache.servicecomb.provider.pojo.RpcSchema;
 
-@Component
-public class ReturnNullFallbackPolicy implements FallbackPolicy {
-  private static final String POLICY_NAME = "returnNull";
+import io.swagger.annotations.ApiOperation;
 
-  @Override
-  public String name() {
-    return POLICY_NAME;
+@RpcSchema(schemaId = "apiOpertionPojoSchemaTest")
+public class ApiOpertionPojoSchema {
+
+  @ApiOperation(value = "", nickname = "sayHi")
+  public String sayHello() {
+    return "ApiOpertionPojoSchema#sayHello";
   }
 
-  @Override
-  public Response getFallbackResponse(Invocation invocation, Throwable error) {
-    return Response.succResp(null);
+  @ApiOperation(value = "", nickname = "sayHello")
+  public String sayHello(String name) {
+    return name;
   }
 }

@@ -14,23 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.servicecomb.bizkeeper;
 
-import org.apache.servicecomb.core.Invocation;
-import org.apache.servicecomb.swagger.invocation.Response;
-import org.springframework.stereotype.Component;
+package org.apache.servicecomb.it.extend.engine;
 
-@Component
-public class ReturnNullFallbackPolicy implements FallbackPolicy {
-  private static final String POLICY_NAME = "returnNull";
+import java.net.URI;
 
-  @Override
-  public String name() {
-    return POLICY_NAME;
+import org.apache.servicecomb.it.junit.ITJUnitUtils;
+import org.apache.servicecomb.provider.springmvc.reference.async.CseAsyncClientHttpRequestFactory;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.client.AsyncClientHttpRequest;
+
+public class ITAsyncClientHttpRequestFactory extends CseAsyncClientHttpRequestFactory {
+  private String transport;
+
+  public ITAsyncClientHttpRequestFactory() {
+    this.transport = ITJUnitUtils.getTransport();
   }
 
   @Override
-  public Response getFallbackResponse(Invocation invocation, Throwable error) {
-    return Response.succResp(null);
+  public AsyncClientHttpRequest createAsyncRequest(URI uri, HttpMethod httpMethod) {
+    return new ITAsyncClientHttpRequest(uri, httpMethod, transport);
   }
 }

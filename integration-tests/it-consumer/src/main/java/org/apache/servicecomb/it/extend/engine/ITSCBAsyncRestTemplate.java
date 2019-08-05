@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.servicecomb.it.extend.engine;
 
 import java.util.Optional;
@@ -21,13 +22,13 @@ import java.util.Optional;
 import org.apache.servicecomb.core.definition.MicroserviceVersionMeta;
 import org.apache.servicecomb.core.definition.SchemaMeta;
 import org.apache.servicecomb.it.junit.ITJUnitUtils;
-import org.apache.servicecomb.provider.springmvc.reference.CseRestTemplate;
+import org.apache.servicecomb.provider.springmvc.reference.async.CseAsyncRestTemplate;
 import org.apache.servicecomb.serviceregistry.RegistryUtils;
 import org.apache.servicecomb.serviceregistry.api.registry.MicroserviceInstance;
 import org.apache.servicecomb.serviceregistry.consumer.MicroserviceVersionRule;
 import org.apache.servicecomb.serviceregistry.definition.DefinitionConst;
 
-public class ITSCBRestTemplate extends CseRestTemplate {
+public class ITSCBAsyncRestTemplate extends CseAsyncRestTemplate {
   private String urlPrefix;
 
   private String schemaId;
@@ -36,11 +37,11 @@ public class ITSCBRestTemplate extends CseRestTemplate {
 
   private MicroserviceInstance instance;
 
-  public ITSCBRestTemplate(String schemaId) {
+  public ITSCBAsyncRestTemplate(String schemaId) {
     this.schemaId = schemaId;
   }
 
-  public ITSCBRestTemplate init() {
+  public ITSCBAsyncRestTemplate init() {
     String producerName = ITJUnitUtils.getProducerName();
     MicroserviceVersionRule microserviceVersionRule = RegistryUtils.getServiceRegistry().getAppManager()
         .getOrCreateMicroserviceVersionRule(RegistryUtils.getAppId(), producerName,
@@ -54,7 +55,7 @@ public class ITSCBRestTemplate extends CseRestTemplate {
         .getOrCreateMicroserviceVersions(producerName).getPulledInstances().get(0);
 
     setUriTemplateHandler(new ITUriTemplateHandler(urlPrefix));
-    setRequestFactory(new ITClientHttpRequestFactory());
+    setAsyncRequestFactory(new ITAsyncClientHttpRequestFactory());
 
     return this;
   }
